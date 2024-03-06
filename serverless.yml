@@ -8,7 +8,13 @@ provider:
 
 functions:
   CheckCandidate:
-    handler: src.handler.checkCandidate
+    handler: src/handler.checkCandidateAvailability
+
+  ScheduleInterview:
+    handler: src/handler.scheduleInterview
+
+  AddCandidate:
+    handler: src/handler.addCandidate
 
 stepFunctions:
   stateMachines:
@@ -22,9 +28,34 @@ stepFunctions:
             Type: Task
             Resource:
               Fn::GetAtt: [CheckCandidate, Arn]
-            Next: EndState
-          EndState:
-            Type: End
+            Next: EvaluateCandidateCount
+
+          EvaluateCandidateCount:
+            Type:
+            Choices:
+              - Variable: "$.count"
+                NumericGreaterThan: 0
+                Next: ScheduleInterview
+              - Variable: "$.count"
+                NumericEquals: 0
+                Next: AddCandidate
+            Default: EndWorkflow
+
+          ScheduleInterview:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ScheduleInterview, Arn]
+            Next: EndWorkflow
+
+          AddCandidate:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [AddCandidate, Arn]
+            Next: EndWorkflow
+
+          EndWorkflow:
+            Type: Pass
+            End: true
 
 plugins:
   - serverless-step-functions
