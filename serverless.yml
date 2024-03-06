@@ -2,62 +2,61 @@ service: Auto-Scheduling
 frameworkVersion: "3"
 
 provider:
-  name: aws
-  runtime: nodejs18.x
-  region: us-east-1
+    name: aws
+    runtime: nodejs18.x
+    region: us-east-1
 
 functions:
-  CheckCandidate:
-    handler: src/handler.checkCandidateAvailability
+    CheckCandidate:
+        handler: src/handler.checkCandidateAvailability
 
-  ScheduleInterview:
-    handler: src/handler.scheduleInterview
+    ScheduleInterview:
+        handler: src/handler.scheduleInterview
 
-  AddCandidate:
-    handler: src/handler.addCandidate
+    AddCandidate:
+        handler: src/handler.addCandidate
 
 stepFunctions:
-  stateMachines:
-    InterviewAutoScheduling:
-      name: InterviewAutoScheduling
-      definition:
-        Comment: "Auto scheduling of an interview"
-        StartAt: CheckCandidate
-        States:
-          CheckCandidate:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [CheckCandidate, Arn]
-            Next: EvaluateCandidateCount
+    stateMachines:
+        InterviewAutoScheduling:
+            name: InterviewAutoScheduling
+            definition:
+                Comment: "Auto scheduling of an interview"
+                StartAt: CheckCandidate
+                States:
+                    CheckCandidate:
+                        Type: Task
+                        Resource:
+                            Fn::GetAtt: [CheckCandidate, Arn]
+                        ResultPath: "$.isCandidateExist"
+                        Next: EvaluateCandidateCount
 
-          EvaluateCandidateCount:
-            Type: Choice
-            Choices:
-              - Variable: "$.count"
-                NumericGreaterThan: 0
-                ResultPath: "$.count"
-                Next: ScheduleInterview
-              - Variable: "$.count"
-                NumericEquals: 0
-                ResultPath: "$.count"
-                Next: AddCandidate
-            Default: EndWorkflow
+                    EvaluateCandidateCount:
+                        Type: Choice
+                        Choices:
+                            - Variable: "$.isCandidateExist"
+                              BooleanEquals: true
+                              Next: ScheduleInterview
+                            - Variable: "$.isCandidateExist"
+                              BooleanEquals: false
+                              Next: AddCandidate
+                        Default: EndWorkflow
 
-          ScheduleInterview:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [ScheduleInterview, Arn]
-            Next: EndWorkflow
+                    ScheduleInterview:
+                        Type: Task
+                        Resource:
+                            Fn::GetAtt: [ScheduleInterview, Arn]
+                        Next: EndWorkflow
 
-          AddCandidate:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [AddCandidate, Arn]
-            Next: EndWorkflow
+                    AddCandidate:
+                        Type: Task
+                        Resource:
+                            Fn::GetAtt: [AddCandidate, Arn]
+                        Next: EndWorkflow
 
-          EndWorkflow:
-            Type: Pass
-            End: true
+                    EndWorkflow:
+                        Type: Pass
+                        End: true
 
 plugins:
-  - serverless-step-functions
+    - serverless-step-functions
