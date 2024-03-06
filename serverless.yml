@@ -1,0 +1,30 @@
+service: Auto-Scheduling
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+
+functions:
+  CheckCandidate:
+    handler: src.handler.checkCandidate
+
+stepFunctions:
+  stateMachines:
+    InterviewAutoScheduling:
+      name: InterviewAutoScheduling
+      definition:
+        Comment: "Auto scheduling of an interview"
+        StartAt: CheckCandidate
+        States:
+          CheckCandidate:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [CheckCandidate, Arn]
+            Next: EndState
+          EndState:
+            Type: End
+
+plugins:
+  - serverless-step-functions
