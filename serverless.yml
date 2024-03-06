@@ -35,9 +35,11 @@ stepFunctions:
             Choices:
               - Variable: "$.count"
                 NumericGreaterThan: 0
+                ResultPath: "$.count"
                 Next: ScheduleInterview
               - Variable: "$.count"
                 NumericEquals: 0
+                ResultPath: "$.count"
                 Next: AddCandidate
             Default: EndWorkflow
 
